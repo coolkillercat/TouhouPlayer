@@ -3,12 +3,13 @@ from radar import Radar
 from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
 import win32api, win32con, win32gui, win32ui
-
+import ctypes
 import random
 import os
 import time
 import logging
-
+SendInput = ctypes.windll.user32.SendInput
+"""
 logging.basicConfig(filename='thplayer.log',level=logging.DEBUG)
 
 MOVE = {'left': 0x25,   # 2 pixels each movement
@@ -38,6 +39,86 @@ def key_hold(self, key):
 
 def key_release(key):
     win32api.keybd_event(key, 0, win32con.KEYEVENTF_KEYUP, 0)
+
+"""
+
+SendInput = ctypes.windll.user32.SendInput
+# C struct redefinitions
+PUL = ctypes.POINTER(ctypes.c_ulong)
+class KeyBdInput(ctypes.Structure):
+    _fields_ = [("wVk", ctypes.c_ushort),
+                ("wScan", ctypes.c_ushort),
+                ("dwFlags", ctypes.c_ulong),
+                ("time", ctypes.c_ulong),
+                ("dwExtraInfo", PUL)]
+
+class HardwareInput(ctypes.Structure):
+    _fields_ = [("uMsg", ctypes.c_ulong),
+                ("wParamL", ctypes.c_short),
+                ("wParamH", ctypes.c_ushort)]
+
+class MouseInput(ctypes.Structure):
+    _fields_ = [("dx", ctypes.c_long),
+                ("dy", ctypes.c_long),
+                ("mouseData", ctypes.c_ulong),
+                ("dwFlags", ctypes.c_ulong),
+                ("time",ctypes.c_ulong),
+                ("dwExtraInfo", PUL)]
+
+class Input_I(ctypes.Union):
+    _fields_ = [("ki", KeyBdInput),
+                ("mi", MouseInput),
+                ("hi", HardwareInput)]
+
+class Input(ctypes.Structure):
+    _fields_ = [("type", ctypes.c_ulong),
+                ("ii", Input_I)]
+
+# Actuals Functions
+def PressKey(hexKeyCode):
+    extra = ctypes.c_ulong(0)
+    ii_ = Input_I()
+    ii_.ki = KeyBdInput( 0, hexKeyCode, 0x0008, 0, ctypes.pointer(extra) )
+    x = Input( ctypes.c_ulong(1), ii_ )
+    ctypes.windll.user32.SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
+
+def ReleaseKey(hexKeyCode):
+    extra = ctypes.c_ulong(0)
+    ii_= Input_I()
+    ii_.ki  = KeyBdInput( 0, hexKeyCode, 0x0008 | 0x0002, 0, ctypes.pointer(extra) )
+    x = Input( ctypes.c_ulong(1), ii_ )
+    ctypes.windll.user32.SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
+
+logging.basicConfig(filename='thplayer.log',level=logging.DEBUG)
+
+MOVE = {'left': 0x25,   # 2 pixels each movement
+        'up': 0x26,
+        'right': 0x27,
+        'down': 0x28}
+
+MISC = {'shift': 0x10,  # focus
+        'esc': 0x1B}
+
+ATK = {'z': 0x2C,      # shoot
+       'x': 0x58}      # bomb
+
+HIT_X = 192
+HIT_Y = 385
+
+def key_press(key):
+    # TODO: Make this non-blocking
+    PressKey(key)
+    # reactor.callLater(.02, win32api.keybd_event,key, 0,
+    #                   win32con.KEYEVENTF_KEYUP, 0)
+    time.sleep(.02)
+    ReleaseKey(key)
+
+def key_hold(self, key):
+    PressKey(key)
+
+def key_release(key):
+    ReleaseKey(key)
+
 
 
 class PlayerCharacter(object):
