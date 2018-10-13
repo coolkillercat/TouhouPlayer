@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*- 
 import win32api, win32con, win32gui, win32ui
 import numpy as np
 from PIL import Image, ImageChops, ImageOps
@@ -15,6 +16,7 @@ def take_screenshot(x0, y0, dx, dy):
     Takes a screenshot of the region of the active window starting from
     (x0, y0) with width dx and height dy.
     """
+
     hwnd = win32gui.GetForegroundWindow()   # Window handle
     wDC = win32gui.GetWindowDC(hwnd)        # Window device context
     dcObj = win32ui.CreateDCFromHandle(wDC)

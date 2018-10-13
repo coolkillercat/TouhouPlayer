@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*- 
 from radar import Radar
 from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
@@ -57,6 +58,7 @@ class PlayerCharacter(object):
     def move_right(self):
         # for i in range(4):
         key_press(MOVE['right'])
+
         self.hit_x += 4
 
     def move_up(self):
@@ -84,7 +86,7 @@ class PlayerCharacter(object):
         h_dists, v_dists = self.radar.obj_dists
         if h_dists.size > 0:
             self.move_left()
-        logging.debug(h_dists, v_dists)
+        #logging.debug(h_dists, v_dists)
 
         print(self.hit_x, self.hit_y)
 
